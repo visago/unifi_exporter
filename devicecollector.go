@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/mdlayher/unifi"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/visago/unifi"
 )
 
 // A DeviceCollector is a Prometheus collector for metrics regarding Ubiquiti

@@ -1,5 +1,7 @@
-unifi_exporter [![GoDoc](http://godoc.org/github.com/mdlayher/unifi_exporter?status.svg)](http://godoc.org/github.com/mdlayher/unifi_exporter) [![Build Status](https://travis-ci.org/mdlayher/unifi_exporter.svg?branch=master)](https://travis-ci.org/mdlayher/unifi_exporter) [![Coverage Status](https://coveralls.io/repos/mdlayher/unifi_exporter/badge.svg?branch=master)](https://coveralls.io/r/mdlayher/unifi_exporter?branch=master)
+unifi_exporter
 ==============
+
+Forked from [https://github.com/mdlayher/unifi_exporter](https://github.com/mdlayher/unifi_exporter)
 
 Command `unifi_exporter` provides a Prometheus exporter for a Ubiquiti UniFi
 Controller API and UniFi devices.
@@ -8,21 +10,6 @@ Package `unifiexporter` provides the Exporter type used in the `unifi_exporter`
 Prometheus exporter.
 
 MIT Licensed.
-
-Seeking additional maintainers
-------------------------------
-
-Due to the wide variety of UniFi devices available, and because the UniFi
-APIs are unstable, Matt Layher is unable to dedicate the time and energy
-needed to maintain this exporter on his own.
-
-At this time, there are no official releases or Docker images available.
-Building the exporter from master is the expected method to deploy it.
-
-If you are interested in maintaining this exporter and have demonstrated
-a history of submitting solid improvements to the project, I am happy to
-grant push access to remove myself as a roadblock for progress.
-
 
 Usage
 -----
@@ -56,6 +43,8 @@ with metrics from exported from `unifi_exporter`.
 
 Thanks
 ------
+
+Thanks to [Matt Layher](https://github.com/mdlayher) for the original work.
 
 Special thanks to [Vaibhav Bhembre](https://github.com/neurodrone) for his work
 on [`ceph_exporter`](https://github.com/digitalocean/ceph_exporter).

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mdlayher/unifi"
+	"github.com/visago/unifi"
 )
 
 func TestDeviceCollector(t *testing.T) {
