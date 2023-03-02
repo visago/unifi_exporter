@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mdlayher/unifi"
+	"github.com/visago/unifi"
 )
 
 func Test_pickSites(t *testing.T) {

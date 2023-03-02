@@ -6,8 +6,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/mdlayher/unifi"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/visago/unifi"
 )
 
 const (

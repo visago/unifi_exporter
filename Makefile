@@ -1,7 +1,15 @@
+version=$(shell git describe --always --dirty=-dirty)
+
 .PHONY: all 
+
+all:	lint build
+
+lint:
+	gofmt -w *.go cmd/unifi_exporter/*.go
 
 build:
 	go build ./cmd/unifi_exporter
 
 docker:
-	docker build -t mdlayher/unifi_exporter .
+	# docker buildx create --name mybuilder
+	docker buildx build --platform linux/arm64,linux/amd64 --push -t visago/unifi_exporter:${version} .

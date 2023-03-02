@@ -5,88 +5,45 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/mdlayher/unifi"
-	"github.com/mdlayher/unifi_exporter"
 	"github.com/prometheus/client_golang/prometheus"
-	"gopkg.in/yaml.v2"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/visago/unifi"
+	"github.com/visago/unifi_exporter"
 )
-
-type Config struct {
-	Listen map[string]string `yaml:"listen"`
-	Unifi  map[string]string `yaml:"unifi"`
-}
 
 const (
 	// userAgent is ther user agent reported to the UniFi Controller API.
-	userAgent = "github.com/mdlayher/unifi_exporter"
+	userAgent = "github.com/visago/unifi_exporter"
 )
 
 func main() {
-	var configFile = flag.String("config.file", "", "Relative path to config file yaml")
+	metricsPath := flag.String("metrics.path", "/metrics", "Metrics path")
+	listenAddr := flag.String("metrics.listen", ":9130", "Metrics listening port")
+	unifiAddr := flag.String("unifi.addr", "https://127.0.0.1:8443/", "URL to Unifi Controller")
+	username := flag.String("unifi.username", "admin", "Username for Unifi")
+	password := flag.String("unifi.password", "password", "Password for Unifi")
+	insecure := flag.Bool("unifi.insecure", true, "Insecure mode")
+	site := flag.String("unifi.site", "", "Site for Unifi")
+	timeoutString := flag.String("unifi.timeout", "5s", "Timeout Unifi connection")
+
 	flag.Parse()
 
-	var config Config
-	source, err := ioutil.ReadFile(*configFile)
+	timeout := 5 * time.Second
+	timeout, err := time.ParseDuration(*timeoutString)
 	if err != nil {
-		log.Fatalf("failed to read config file %q: %v", *configFile, err)
-	}
-	err = yaml.Unmarshal(source, &config)
-	if err != nil {
-		log.Fatalf("failed to read YAML from config file %q: %v", *configFile, err)
-	}
-
-	listenAddr := config.Listen["address"]
-	metricsPath := config.Listen["metricspath"]
-	unifiAddr := config.Unifi["address"]
-	username := config.Unifi["username"]
-	password := config.Unifi["password"]
-	site := config.Unifi["site"]
-
-	insecure := false
-	if ins, ok := config.Unifi["insecure"]; ok {
-		insecure, err = strconv.ParseBool(ins)
-		if err != nil {
-			log.Fatalf("failed to parse bool %s: %v", ins, err)
-		}
-	}
-
-	timeout := 5*time.Second
-	if to, ok := config.Unifi["timeout"]; ok {
-		timeout, err = time.ParseDuration(to)
-		if err != nil {
-			log.Fatalf("failed to parse duration %q: %v", to, err)
-		}
-	}
-
-	if unifiAddr == "" {
-		log.Fatal("address of UniFi Controller API must be specified within config file: ", *configFile)
-	}
-	if username == "" {
-		log.Fatal("username to authenticate to UniFi Controller API must be specified within config file: ", *configFile)
-	}
-	if password == "" {
-		log.Fatal("password to authenticate to UniFi Controller API must be specified within config file: ", *configFile)
-	}
-	if listenAddr == "" {
-		// Set default port to 9130 if left blank in config.yml
-		listenAddr = ":9130"
-	}
-	if metricsPath == "" {
-		metricsPath = "/metrics"
+		log.Fatalf("failed to parse duration %s: %v", *timeoutString, err)
 	}
 
 	clientFn := newClient(
-		unifiAddr,
-		username,
-		password,
-		insecure,
+		*unifiAddr,
+		*username,
+		*password,
+		*insecure,
 		timeout,
 	)
 	c, err := clientFn()
@@ -99,7 +56,7 @@ func main() {
 		log.Fatalf("failed to retrieve list of sites: %v", err)
 	}
 
-	useSites, err := pickSites(site, sites)
+	useSites, err := pickSites(*site, sites)
 	if err != nil {
 		log.Fatalf("failed to select a site: %v", err)
 	}
@@ -111,14 +68,14 @@ func main() {
 
 	prometheus.MustRegister(e)
 
-	http.Handle(metricsPath, prometheus.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, metricsPath, http.StatusMovedPermanently)
+		http.Redirect(w, r, *metricsPath, http.StatusMovedPermanently)
 	})
 
-	log.Printf("Starting UniFi exporter on %q for site(s): %s", listenAddr, sitesString(useSites))
+	log.Printf("Starting UniFi exporter on %s for site(s): %s", *listenAddr, sitesString(useSites))
 
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatalf("cannot start UniFi exporter: %s", err)
 	}
 }

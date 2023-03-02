@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/mdlayher/unifi"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/visago/unifi"
 )
 
 // A DeviceCollector is a Prometheus collector for metrics regarding Ubiquiti
@@ -332,25 +332,26 @@ func (c *DeviceCollector) collectDeviceStations(ch chan<- prometheus.Metric, sit
 			llabels := make([]string, len(labels))
 			copy(llabels, labels)
 			llabels = append(llabels, r.Name, r.Radio)
-
-			ch <- prometheus.MustNewConstMetric(
-				c.Stations,
-				prometheus.GaugeValue,
-				float64(r.Stats.NumberStations),
-				llabels...,
-			)
-			ch <- prometheus.MustNewConstMetric(
-				c.UserStations,
-				prometheus.GaugeValue,
-				float64(r.Stats.NumberUserStations),
-				llabels...,
-			)
-			ch <- prometheus.MustNewConstMetric(
-				c.GuestStations,
-				prometheus.GaugeValue,
-				float64(r.Stats.NumberGuestStations),
-				llabels...,
-			)
+			if r.Stats != nil {
+				ch <- prometheus.MustNewConstMetric(
+					c.Stations,
+					prometheus.GaugeValue,
+					float64(r.Stats.NumberStations),
+					llabels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					c.UserStations,
+					prometheus.GaugeValue,
+					float64(r.Stats.NumberUserStations),
+					llabels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					c.GuestStations,
+					prometheus.GaugeValue,
+					float64(r.Stats.NumberGuestStations),
+					llabels...,
+				)
+			}
 		}
 	}
 }

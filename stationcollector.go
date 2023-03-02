@@ -3,8 +3,8 @@ package unifiexporter
 import (
 	"log"
 
-	"github.com/mdlayher/unifi"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/visago/unifi"
 )
 
 // A StationCollector is a Prometheus collector for metrics regarding Ubiquiti
@@ -18,8 +18,13 @@ type StationCollector struct {
 	ReceivedPacketsTotal    *prometheus.Desc
 	TransmittedPacketsTotal *prometheus.Desc
 
-	RSSIDBM  *prometheus.Desc
-	NoiseDBM *prometheus.Desc
+	FirstSeen *prometheus.Desc
+	LastSeen  *prometheus.Desc
+	Uptime    *prometheus.Desc
+
+	SignalDBM *prometheus.Desc
+	RSSIDBM   *prometheus.Desc
+	NoiseDBM  *prometheus.Desc
 
 	c     *unifi.Client
 	sites []*unifi.Site
@@ -40,9 +45,11 @@ func NewStationCollector(c *unifi.Client, sites []*unifi.Site) *StationCollector
 		labelsStation  = []string{
 			"site",
 			"id",
+			"station_ip",
 			"ap_mac",
 			"station_mac",
-			"hostname",
+			"station_hostname",
+			"station_oui",
 			"connection",
 		}
 	)
@@ -84,8 +91,36 @@ func NewStationCollector(c *unifi.Client, sites []*unifi.Site) *StationCollector
 			nil,
 		),
 
+		LastSeen: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "lastseen_seconds"),
+			"Time since station was last seen",
+			labelsStation,
+			nil,
+		),
+
+		FirstSeen: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "firstseen_seconds"),
+			"Time station was first seen",
+			labelsStation,
+			nil,
+		),
+
+		Uptime: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "uptime_seconds"),
+			"Uptime of current station",
+			labelsStation,
+			nil,
+		),
+
 		RSSIDBM: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "rssi_dbm"),
+			"Current RSSI of stations",
+			labelsStation,
+			nil,
+		),
+
+		SignalDBM: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "signal_dbm"),
 			"Current signal strength of stations",
 			labelsStation,
 			nil,
@@ -151,9 +186,11 @@ func (c *StationCollector) collectStationBytes(ch chan<- prometheus.Metric, site
 		labels := []string{
 			siteLabel,
 			s.ID,
+			s.IP.String(),
 			s.APMAC.String(),
 			s.MAC.String(),
 			hostName(s),
+			s.Oui,
 			connType(s),
 		}
 
@@ -194,16 +231,46 @@ func (c *StationCollector) collectStationSignal(ch chan<- prometheus.Metric, sit
 		labels := []string{
 			siteLabel,
 			s.ID,
+			s.IP.String(),
 			s.APMAC.String(),
 			s.MAC.String(),
 			hostName(s),
+			s.Oui,
 			connType(s),
 		}
+
+		ch <- prometheus.MustNewConstMetric(
+			c.Uptime,
+			prometheus.GaugeValue,
+			float64(s.Uptime.Seconds()),
+			labels...,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
+			c.FirstSeen,
+			prometheus.GaugeValue,
+			float64(s.FirstSeen.Unix()),
+			labels...,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
+			c.LastSeen,
+			prometheus.GaugeValue,
+			float64(s.LastSeen.Unix()),
+			labels...,
+		)
 
 		ch <- prometheus.MustNewConstMetric(
 			c.RSSIDBM,
 			prometheus.GaugeValue,
 			float64(s.RSSI),
+			labels...,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
+			c.SignalDBM,
+			prometheus.GaugeValue,
+			float64(s.Signal),
 			labels...,
 		)
 
@@ -228,7 +295,12 @@ func (c *StationCollector) Describe(ch chan<- *prometheus.Desc) {
 		c.ReceivedPacketsTotal,
 		c.TransmittedPacketsTotal,
 
+		c.LastSeen,
+		c.FirstSeen,
+		c.Uptime,
+
 		c.RSSIDBM,
+		c.SignalDBM,
 		c.NoiseDBM,
 	}
 
